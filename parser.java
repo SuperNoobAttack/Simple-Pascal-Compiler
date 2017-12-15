@@ -62,7 +62,20 @@ public class parser
 	* @throws IOException  If an input or output 
 	*                      exception occurred
 	*/
+
+	//used for creating the parsing
+	//tree later in this program.
+	static StringTokenizer st;
+    static String curr;
+
+    //checking for any kind of errors while parsing.
+    //if we happen to get any errors, this boolean will
+    //change to false, and the program will produce no 
+    //output.
 	public static boolean isError = false; 
+
+	//default output file in case the user does not specify
+	//an output file to use.
 	public static String outputfile = "default.asm";
 //           _____                    _____                    _____                    _____          
 //          /\    \                  /\    \                  /\    \                  /\    \         
@@ -123,6 +136,7 @@ public class parser
 		//buffer variable for strings later on.
 		String toktemp = "";
 		String tokbuf = "";
+
 		while (tokenizer.hasMoreTokens())
 		{
 			//we have to make a special case for strings because 
@@ -197,6 +211,7 @@ public class parser
 			}
 			if (temp.contains("VAR"))
 			{
+				isInitialize(cStruct, u, tokenCount);
 				initialize(cStruct, u, tokenCount);
 			}
 			if (temp.contains("PROGRAM") || temp.contains("PROCEDURE") || temp.contains("FUNCTION"))
@@ -205,7 +220,7 @@ public class parser
 			}
 			if (temp.contains("WRITE"))
 			{
-				write(cStruct, u, tokenCount);
+				iswrite(cStruct, u, tokenCount);
 			}
 			//for two from the end
 			if (u == (tokenCount - 2))
@@ -236,6 +251,143 @@ public class parser
 //         /:::/    /              \:::\____\                                 /:::/    /              \::/____/              \::::/    /             \::::/    /       
 //         \::/    /                \::/    /                                 \::/    /                ~~                     \::/____/               \::/    /        
 //          \/____/                  \/____/                                   \/____/                                         ~~                      \/____/         
+
+	/**
+	* this method finds the next value in our parser
+	* by referencing the next token found in the file
+	* outputted by the lexical analyser.
+	*/
+    static void next() 
+    {
+		// try 
+		// {
+		    curr=st.nextToken().intern();
+		// } 
+		// catch( NoSuchElementException e) 
+		// {
+		//     curr=null;
+		// }
+    }
+
+    //the following functions with "parse"
+    //in their function headers will make the 
+    //parse tree for our compiler.
+
+    /**
+    *this parser method references parseF(),
+    *and parseT1() to complete partial parsing
+    * @return returns 1 or 0 to represent the number
+    * passed into this function
+    * @param value passed from parseT
+    */
+    static int parseT1(int x) {
+		if (curr=="*") 
+		{
+		    next();
+		    int y=parseF();
+		    return parseT1(x*y);
+		} 
+
+		else if(curr=="+" || curr==")" || curr=="$") 
+		{
+		    return x;
+		} 
+		else 
+		{
+		    System.out.println("Unexpected :"+curr);
+		    return x; // to make compiler happy
+		}
+    }
+
+    /**
+    * this function takes the value from 
+    * parseE1 and outputs that value
+    * in case we needed to get the value 
+    * directly.
+    * @return output value from parseE1
+    */
+     static int parseE() 
+    {
+		// E -> T E1
+		int x=parseT();
+		return parseE1(x);
+    }
+
+    /**
+    *this parser method references parseT(),
+    *and parseE1() to complete partial parsing
+    * @return returns 1 or 0 to represent the number
+    * passed into this function
+    * @param value passed from parseT
+    */
+    static int parseE1(int x) 
+    {
+		if (curr=="+") 
+		{
+		    next();
+		    int y = parseT();
+		    return parseE1(x+y);
+		} 
+		else if(curr==")" || curr=="$" ) 
+		{
+		    return x;
+		} 
+		else 
+		{
+		    System.out.println("Unexpected :"+curr);
+		    return x;
+		}
+    }
+
+    /**
+    * calls parseT1() to do further parsing
+    * @return value outputted by parseT1
+    */
+    static int parseT() 
+    {
+		int x=parseF();
+		return parseT1(x);
+    }
+    
+    /**
+    * calls parseE for further parsing
+    * @return returns -1 if an error occurs
+    * while parsing. 
+    */
+    static int parseF() 
+    {
+		if (curr=="(") 
+		{
+		    next();
+		    int x=parseE();
+		    if(curr==")") 
+		    {
+				next();
+				return x;
+		    } 
+		    else 
+		    {
+				System.out.println(") expected.");
+				return -1;
+		    }
+		} 
+
+		else 
+		{
+			try 
+			{
+			    int x=Integer.valueOf(curr).intValue();
+			    next();
+			    return x;
+			} 
+			catch(NumberFormatException e) 
+			{
+			    System.out.println("Number expected.");
+			    return -1; // to make compiler happy
+			}
+		}
+	}
+
 	/**
 	* this method removes any existing quotation marks 
 	* from string values
@@ -444,6 +596,18 @@ public class parser
 		}
 	}
 
+	public static void isIf(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
+	{
+		String temp;
+		CharacterStruct characterstruct = cStruct.get(u);
+		temp = characterstruct.Identifier;
+
+		while (1)
+		{
+			
+		}
+	}
+
 	/**
 	* This program will ensure that values are initilized 
 	* before they are used in a Pascal program
@@ -453,7 +617,7 @@ public class parser
 	* limit of the array is (this is primarily done to avoid using an  
 	* arbitrary number to signify the end of the loop used here).
 	*/
-	public static void initialize(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
+	public static void isInitialize(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
 	{
 		ArrayList initialized = new ArrayList();
 		String temp;
@@ -491,6 +655,100 @@ public class parser
 						initialized.add(characterstruct.DataType);
 					}
 				}
+			}
+		}
+	}
+
+	/**
+	* once a variable is initialized, this function
+	* checks to see what kind of type the variable becomes
+	* @param cStruct the ArrayList populated with data from languageScanner
+	* @param u counter from the main program so we know where we are in the program
+	* @param tokenCount from the main program, used so we know what the max
+	*/
+	public static void initialize (ArrayList<CharacterStruct> cStruct, int u,  int tokenCount)
+	{
+		String temp;
+		CharacterStruct characterstruct = cStruct.get(u);
+		temp = characterstruct.Identifier;
+
+		//in theory we've already found the "VAR" in the main
+		//so we don't need to have an if statement for it here.
+
+		int varCount = 0;
+		while(true)
+		{
+			//jump one ahead in our structure.
+			u++;
+			characterstruct = cStruct.get(u);
+			temp = characterstruct.Symbol;
+
+			if (temp.contains("ID"))
+			{
+				u++;
+				characterstruct = cStruct.get(u);
+				temp = characterstruct.Symbol;
+				if (!temp.contains("COMMA") || !temp.contains("COLON"))
+				{
+					System.out.print("Expected separator between variables on line ");
+					System.out.println(characterstruct.Line);
+					isError = true;
+					break;
+				}
+				//resetting our u value in case we don't get an error.
+				u--;
+				characterstruct = cStruct.get(u);
+				temp = characterstruct.Symbol;
+			}
+
+			if (temp.contains("COMMA"))
+			{
+				//we do +2 so when we go back, we can skip the 
+				//comma every time. 
+				varCount = varCount + 2; 
+			}
+
+			if (temp.contains("COLON"))
+			{
+				u++;
+				characterstruct = cStruct.get(u);
+				temp = characterstruct.Symbol;
+				if (!temp.contains("INTEGER") || !temp.contains("ARRAY") || !temp.contains("CHAR"))
+				{
+					System.out.print("Expected variable declaation here on line ");
+					System.out.println(characterstruct.Line);
+					isError = true;
+					break;
+				}
+				//resetting our u value in case we don't get an error.
+				u--;
+				characterstruct = cStruct.get(u);
+				temp = characterstruct.Symbol;
+			}
+			if (temp.contains("INTEGER") || temp.contains("ARRAY") || temp.contains("CHAR"))
+			{
+				if (temp.contains("INTEGER"))
+				{
+					u = u-2;
+					cStruct.set(u, new CharacterStruct(characterstruct.Identifier, characterstruct.Symbol, characterstruct.Level, characterstruct.ProcedureName, "INTEGER", characterstruct.Value, characterstruct.Line));	
+				}
+				if (temp.contains("ARRAY"))
+				{
+					u = u-2;
+					cStruct.set(u, new CharacterStruct(characterstruct.Identifier, characterstruct.Symbol, characterstruct.Level, characterstruct.ProcedureName, "ARRAY", characterstruct.Value, characterstruct.Line));	
+				}
+				if (temp.contains("CHAR"))
+				{
+					u = u-2;
+					cStruct.set(u, new CharacterStruct(characterstruct.Identifier, characterstruct.Symbol, characterstruct.Level, characterstruct.ProcedureName, "CHAR", characterstruct.Value, characterstruct.Line));	
+				}
+			}
+			else
+			{
+				System.out.print("Expected either type declaration or another variable on line ");
+				System.out.println(characterstruct.Line);
+				isError = true;
+				break;
 			}
 		}
 	}
@@ -572,7 +830,16 @@ public class parser
 		}
 	}
 
-	public static void write(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
+	/**
+	* This function will write to the file
+	* using the writeToText and writeTofile functions
+	* @param cStruct the ArrayList populated with data from languageScanner
+	* @param u counter from the main program so we know where we are in the program
+	* @param tokenCount from the main program, used so we know what the max
+	* limit of the array is (this is primarily done to avoid using an  
+	* arbitrary number to signify the end of the loop used here).
+	*/
+	public static void iswrite(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
 	{
 		String temp;
 		u++;
@@ -597,8 +864,7 @@ public class parser
 		{
 			characterstruct = cStruct.get(u);
 			temp = characterstruct.Symbol;
-			//something like this...
-			writeToData();
+			writeToData(temp);
 		}
 	}
 
@@ -606,32 +872,123 @@ public class parser
 	* This function will write any variables 
 	* or non-declared values to the top of the 
 	* .data portion of the MARS MIPS assembler
+	* this current iteration only works for small programs
 	* @var uses the global "outputfile" variable 
 	* in order to select the location of the outgoing
 	* file as specified by the user.
 	*/
-	public static void writeToData()
+	public static void writeToData(String inputString)
 	{
-		try 
+		File tmpDir = new File(outputfile);
+		boolean exists = tmpDir.exists();
+		BufferedWriter buffer = null;
+		if (!tmpDir.isDirectory())
 		{
-			byte[] b = {1};
-
-			// create a new RandomAccessFile with filename test
-			RandomAccessFile raf = new RandomAccessFile(outputfile, "rw");
-
-			// write a byte in the file
-			raf.write(b);
-
-			// set the file pointer at 0 position
-			raf.seek(0);
-
-			// print the Byte
-			System.out.println("" + raf.readByte());
-         
-		} 
-		catch (IOException ex) 
+			System.out.println(outputfile);
+			System.out.println("File does not exist yet.");
+			System.out.println("Creating file...");
+			PrintWriter writer = new PrintWriter(outputfile, "UTF-8");
+		}
+		else
 		{
-        	ex.printStackTrace();
-        }
+			System.out.println(outputfile);
+			//at some point I plan on splitting this up into multiple methods that print
+			//both the .data values and actual code separately. Including
+			//checking types and actually making thsi code dynamic.
+			try
+			{
+				buffer = new BufferedWriter(new FileWriter(outputfile, true));
+				buffer.write("\t.data");
+				buffer.newLine();
+				buffer.write("string1:\t.asciiz\t\"");
+				buffer.write(inputString);
+				buffer.write("\\n\"");
+			}
+			catch (IOException ioe)
+			{
+				ioe.printStackTrace();
+			}
+			finally 
+			{
+				if (buffer != null) 
+				{
+					try 
+					{
+						buffer.close();
+					}
+					catch (IOException ioe2)
+					{
+						//ignore it
+					}
+				}
+			}			
+		}
+	}
+
+	/**
+	* This function will output 
+	* p-code to either the file specified
+	* by the user, or to 'default.asm'.
+	* Only assember code below the '.text'
+	* market should be printed in this function.
+	*/
+	public static void writeToText(ArrayList<CharacterStruct> cStruct, int u, int tokenCount)
+	{
+		File tmpDir = new File(outputfile);
+		boolean exists = tmpDir.exists();
+		BufferedWriter buffer = null;
+		if (!tmpDir.isDirectory())
+		{
+			System.out.println(outputfile);
+			System.out.println("File does not exist yet.");
+			System.out.println("Creating file...");
+			PrintWriter writer = new PrintWriter(outputfile, "UTF-8");
+		}
+		else
+		{
+			try
+			{
+				String temp;
+				CharacterStruct characterstruct = cStruct.get(u);
+				temp = characterstruct.Identifier;	
+				if (temp.contains("STRING"))
+				{
+					//specific code for printing something out
+					buffer.write("\tli\t$v0, 4\n");
+					buffer.write("\tla\t$a0, ");
+					buffer.write(characterstruct.Symbol);
+					buffer.newLine();
+					buffer.write("\tsyscall");
+					buffer.newLine();
+					buffer.newLine();
+				}
+
+				if (temp.contains("LASTCHAR"))
+				{
+					//always use the following snippit to teminate the program.
+					buffer.write("\tli\t$v0, 10");
+					buffer.write("\t\nsyscall");
+					buffer.flush();	
+				}
+			}
+			catch (IOException ioe)
+			{
+				ioe.printStackTrace();
+			}
+			finally 
+			{
+				if (buffer != null) 
+				{
+					try 
+					{
+						buffer.close();
+					}
+					catch (IOException ioe2)
+					{
+						//ignore it
+					}
+				}
+			}
+		}
 	}
 }

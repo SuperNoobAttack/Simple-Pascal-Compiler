@@ -4,7 +4,8 @@ SEMICOLON           ;                   1
 BEGIN               begin               2                   
 WRITE               write               3                   
 LPAREN              (                   3                   
-STRING              " Hello, world. "   3                   
+STRING              " This is a test! " 3                   
 RPAREN              )                   3                   
+SEMICOLON           ;                   3                   
 END                 end                 4                   
 PERIOD              .                   4                   
